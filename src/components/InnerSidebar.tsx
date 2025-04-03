@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { MessageSquare, ClipboardList, BarChart, MoreVertical } from "lucide-react";
+import { MessageSquare, ClipboardList, BarChart, MoreVertical, CalendarCheck } from "lucide-react";
 import ClassroomDropdown from "./ClassroomDropdown";
 import { getClassroom } from "../api/ClassroomApi";
 
@@ -9,7 +9,7 @@ interface InnerSidebarProps {
 }
 
 const InnerSidebar: React.FC<InnerSidebarProps> = ({ classId, setActiveTab }) => {
-  const [classroom, setClassroom] = useState<{ title: string } | null>(null);
+  const [classroom, setClassroom] = useState<{ title: string; isOwner: boolean } | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -17,7 +17,7 @@ const InnerSidebar: React.FC<InnerSidebarProps> = ({ classId, setActiveTab }) =>
     const fetchClassroom = async () => {
       try {
         const data = await getClassroom(classId);
-        setClassroom(data as { title: string });
+        setClassroom(data as { title: string; isOwner: boolean });
       } catch (error) {
         console.error("Failed to fetch classroom", error);
       }
@@ -37,7 +37,6 @@ const InnerSidebar: React.FC<InnerSidebarProps> = ({ classId, setActiveTab }) =>
 
   return (
     <div className="w-64 bg-gray-900 text-white h-screen flex flex-col p-4 relative">
-
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-semibold truncate max-w-[180px]">
           {classroom?.title || "Loading..."}
@@ -78,6 +77,15 @@ const InnerSidebar: React.FC<InnerSidebarProps> = ({ classId, setActiveTab }) =>
         >
           <BarChart className="mr-2" /> Grades
         </button>
+
+        {/* {classroom?.isOwner && ( */}
+          <button
+            onClick={() => setActiveTab("attendance")}
+            className="p-3 rounded hover:bg-gray-700 flex items-center transition-colors"
+          >
+            <CalendarCheck className="mr-2" /> Attendance
+          </button>
+       {/* // )} */}
       </nav>
     </div>
   );

@@ -10,10 +10,13 @@ import GradesTab from "../components/GradesTab";
 
 import { getClassroom } from "../api/ClassroomApi";
 import { Loader } from "../components/Loader";
+import AttendanceComponent from "../components/AttendanceComponent";
+
 
 const ClassroomPage = () => {
   const { classroomId } = useParams<{ classroomId: string }>();
-  const [activeTab, setActiveTab] = useState<"chat" | "assignments" | "grades">("chat");
+  const [activeTab, setActiveTab] = useState<"chat" | "assignments" | "grades" | "attendance">("chat");
+
   const [classroom, setClassroom] = useState<{ title: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,28 +40,19 @@ const ClassroomPage = () => {
 
   return (
     <div className="flex h-screen">
-      {/* Left global sidebar */}
       <Sidebar />
 
-      {/* Inner classroom sidebar (navigation) */}
       <InnerSidebar classId={classroomId!} setActiveTab={setActiveTab} />
 
-      {/* Main content area */}
       <div className="flex-1 p-6 overflow-y-auto">
         {loading ? (
           <Loader />
         ) : (
           <>
-            {/* Classroom Title */}
-            <h1 className="text-2xl font-bold mb-4">{classroom?.title}</h1>
-
-            {/* Conditional Tab Content */}
             {activeTab === "chat" && <Chat classId={classroomId!} />}
-
-            {activeTab === "assignments" && <AssignmentsTab classId={classroomId!} />}
-
-            {activeTab === "grades" &&  <GradesTab classId={classroomId!} />
-            }
+{activeTab === "assignments" && <AssignmentsTab classId={classroomId!} />}
+{activeTab === "grades" && <GradesTab classId={classroomId!} />}
+{activeTab === "attendance" && <AttendanceComponent classId={classroomId!} />}
           </>
         )}
       </div>

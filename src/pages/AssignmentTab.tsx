@@ -1,16 +1,20 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import moment from "moment";
+import { Plus } from "lucide-react";
+import CreateQuizForm from "../components/CreateQuizForm";
 
 interface Quiz {
   id: number;
   title: string;
   startDate: string;
+  endDate: string;
   questions: Question[];
+  isSubmitted: boolean;
 }
 
 interface Question {
-  question_id: number;
+  id: number;
   question: string;
   questionType: "MCQ" | "ESSAY";
   choices: { text: string; isCorrect: boolean }[];
@@ -27,11 +31,10 @@ const AssignmentsTab = ({ classId }: { classId: string }) => {
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [answers, setAnswers] = useState<Answer[]>([]);
-  const [submittedQuizIds, setSubmittedQuizIds] = useState<number[]>([]); // You can fetch this from the backend later
+  const [showForm, setShowForm] = useState(false);
 
   const token = localStorage.getItem("token");
 
-  // Fetch quizzes
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
@@ -53,11 +56,15 @@ const AssignmentsTab = ({ classId }: { classId: string }) => {
     fetchQuizzes();
   }, [classId]);
 
+  const isQuizAvailable = (quiz: Quiz) => {
+    const now = new Date();
+    const start = new Date(quiz.startDate);
+    const end = new Date(quiz.endDate);
+    return now >= start && now <= end;
+  };
+
   const handleStartQuiz = (quiz: Quiz) => {
-    if (submittedQuizIds.includes(quiz.id)) {
-      // Already submitted — show something else later if needed
-      return;
-    }
+    if (quiz.isSubmitted || !isQuizAvailable(quiz)) return;
     setSelectedQuiz(quiz);
     setAnswers([]);
     setShowModal(true);
@@ -68,7 +75,7 @@ const AssignmentsTab = ({ classId }: { classId: string }) => {
   };
 
   const handleAnswerChange = (questionIndex: number, answer: string) => {
-    const questionId = selectedQuiz!.questions[questionIndex].question_id;
+    const questionId = selectedQuiz!.questions[questionIndex].id;
     const updated = [...answers];
     const existing = updated.find((a) => a.question_id === questionId);
 
@@ -96,7 +103,11 @@ const AssignmentsTab = ({ classId }: { classId: string }) => {
       );
       alert("Quiz submitted successfully!");
       setSelectedQuiz(null);
-      setSubmittedQuizIds((prev) => [...prev, selectedQuiz.id]);
+      setQuizzes((prev) =>
+        prev.map((q) =>
+          q.id === selectedQuiz.id ? { ...q, isSubmitted: true } : q
+        )
+      );
     } catch (err) {
       console.error("Error submitting quiz", err);
       alert("Failed to submit quiz.");
@@ -105,27 +116,58 @@ const AssignmentsTab = ({ classId }: { classId: string }) => {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4">Available Quizzes</h2>
-      <div className="space-y-4">
-        {quizzes.map((quiz) => (
-          <div
-            key={quiz.id}
-            className={`border p-4 rounded-lg shadow-sm cursor-pointer hover:bg-gray-50 transition ${
-              submittedQuizIds.includes(quiz.id)
-                ? "opacity-50 cursor-not-allowed"
-                : ""
-            }`}
-            onClick={() => !submittedQuizIds.includes(quiz.id) && handleStartQuiz(quiz)}
-          >
-            <h3 className="text-lg font-medium">{quiz.title}</h3>
-            <p className="text-sm text-gray-500">
-              Starts at: {moment(quiz.startDate).format("MMMM Do YYYY, h:mm A")}
-            </p>
-          </div>
-        ))}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Available Quizzes</h2>
+        <button
+          onClick={() => setShowForm((prev) => !prev)}
+          className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        >
+          <Plus className="mr-2" size={18} /> {showForm ? "Cancel" : "Create Quiz"}
+        </button>
       </div>
 
-      {/* Modal */}
+      {showForm && (
+        <div className="mb-6">
+          <CreateQuizForm
+            classId={classId}
+            onSuccess={() => {
+              setShowForm(false);
+            }}
+          />
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {quizzes.map((quiz) => {
+          const available = isQuizAvailable(quiz);
+          return (
+            <div
+              key={quiz.id}
+              className={`border p-4 rounded-lg shadow-sm transition ${
+                quiz.isSubmitted || !available
+                  ? "bg-gray-100 text-gray-600 cursor-default"
+                  : "cursor-pointer hover:bg-gray-50"
+              }`}
+              onClick={() =>
+                !quiz.isSubmitted && available && handleStartQuiz(quiz)
+              }
+            >
+              <h3 className="text-lg font-medium">{quiz.title}</h3>
+              <p className="text-sm text-gray-500">
+                Starts at: {moment(quiz.startDate).format("MMMM Do YYYY, h:mm A")}<br />
+                Ends at: {moment(quiz.endDate).format("MMMM Do YYYY, h:mm A")}
+              </p>
+              {quiz.isSubmitted && (
+                <p className="mt-1 text-sm font-semibold text-green-600">Submitted</p>
+              )}
+              {!available && !quiz.isSubmitted && (
+                <p className="mt-1 text-sm font-semibold text-red-500">Not Available</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
       {showModal && selectedQuiz && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-lg">
@@ -148,7 +190,6 @@ const AssignmentsTab = ({ classId }: { classId: string }) => {
         </div>
       )}
 
-      {/* Quiz Form */}
       {selectedQuiz && !showModal && (
         <div className="mt-8">
           <h2 className="text-xl font-bold mb-6">{selectedQuiz.title}</h2>
@@ -177,9 +218,10 @@ const AssignmentsTab = ({ classId }: { classId: string }) => {
               ) : (
                 <textarea
                   placeholder="Type your answer..."
-                  onChange={(e) =>
-                    handleAnswerChange(index, e.target.value)
+                  value={
+                    answers.find((a) => a.question_id === q.id)?.answerText || ""
                   }
+                  onChange={(e) => handleAnswerChange(index, e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded"
                   rows={4}
                 />
