@@ -1,17 +1,23 @@
 import { useState, useEffect, useRef } from "react";
 import { MessageSquare, ClipboardList, BarChart, MoreVertical, CalendarCheck } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import ClassroomDropdown from "./ClassroomDropdown";
 import { getClassroom } from "../api/ClassroomApi";
+import { useQuizContext } from "../context/QuizContext";
 
 interface InnerSidebarProps {
   classId: string;
-  setActiveTab: (tab: string) => void;
 }
 
-const InnerSidebar: React.FC<InnerSidebarProps> = ({ classId, setActiveTab }) => {
+const InnerSidebar: React.FC<InnerSidebarProps> = ({ classId }) => {
   const [classroom, setClassroom] = useState<{ title: string; isOwner: boolean } | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const { quizInProgress, autoSubmitQuiz } = useQuizContext();
 
   useEffect(() => {
     const fetchClassroom = async () => {
@@ -34,6 +40,27 @@ const InnerSidebar: React.FC<InnerSidebarProps> = ({ classId, setActiveTab }) =>
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const isActive = (path: string) => location.pathname.endsWith(path);
+
+  // Intercept nav
+  const handleNav = async(path: string) => {
+    if (quizInProgress) {
+      const confirmLeave = window.confirm(
+        "A quiz is in progress. Navigating away will submit your quiz. Continue?"
+      );
+      if (confirmLeave) {
+        try {
+          await autoSubmitQuiz();
+        } catch (err) {
+          console.error("Quiz submission failed:", err);
+        }
+        navigate(path);
+      }
+    } else {
+      navigate(path);
+    }
+  };
 
   return (
     <div className="w-64 bg-gray-900 text-white h-screen flex flex-col p-4 relative">
@@ -58,30 +85,38 @@ const InnerSidebar: React.FC<InnerSidebarProps> = ({ classId, setActiveTab }) =>
 
       <nav className="flex flex-col space-y-2">
         <button
-          onClick={() => setActiveTab("chat")}
-          className="p-3 rounded hover:bg-gray-700 flex items-center transition-colors"
+          onClick={() => handleNav(`/classroom/${classId}/chat`)}
+          className={`p-3 rounded flex items-center transition-colors ${
+            isActive("chat") ? "bg-gray-700" : "hover:bg-gray-700"
+          }`}
         >
           <MessageSquare className="mr-2" /> Chat
         </button>
 
         <button
-          onClick={() => setActiveTab("assignments")}
-          className="p-3 rounded hover:bg-gray-700 flex items-center transition-colors"
+          onClick={() => handleNav(`/classroom/${classId}/assignments`)}
+          className={`p-3 rounded flex items-center transition-colors ${
+            isActive("assignments") ? "bg-gray-700" : "hover:bg-gray-700"
+          }`}
         >
           <ClipboardList className="mr-2" /> Assignments
         </button>
 
         <button
-          onClick={() => setActiveTab("grades")}
-          className="p-3 rounded hover:bg-gray-700 flex items-center transition-colors"
+          onClick={() => handleNav(`/classroom/${classId}/grades`)}
+          className={`p-3 rounded flex items-center transition-colors ${
+            isActive("grades") ? "bg-gray-700" : "hover:bg-gray-700"
+          }`}
         >
           <BarChart className="mr-2" /> Grades
         </button>
 
         {/* {classroom?.isOwner && ( */}
           <button
-            onClick={() => setActiveTab("attendance")}
-            className="p-3 rounded hover:bg-gray-700 flex items-center transition-colors"
+            onClick={() => handleNav(`/classroom/${classId}/attendance`)}
+            className={`p-3 rounded flex items-center transition-colors ${
+              isActive("attendance") ? "bg-gray-700" : "hover:bg-gray-700"
+            }`}
           >
             <CalendarCheck className="mr-2" /> Attendance
           </button>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, CheckCircle, XCircle, ChevronDown, Download, Trash2 } from "lucide-react";
 import axios from "axios";
+import { useParams } from "react-router-dom";
 
 interface Student {
   studentId: number;
@@ -16,7 +17,8 @@ interface AttendanceCell {
   status: "PRESENT" | "ABSENT";
 }
 
-const AttendanceComponent = ({ classId }: { classId: string }) => {
+const AttendanceComponent = () => {
+  const { classroomId } = useParams<{ classroomId: string }>();
   const [students, setStudents] = useState<Student[]>([]);
   const [attendance, setAttendance] = useState<AttendanceCell[]>([]);
   const [sessionDates, setSessionDates] = useState<{ date: string; editable: boolean }[]>([]);
@@ -33,7 +35,7 @@ const AttendanceComponent = ({ classId }: { classId: string }) => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const res = await axios.get<Student[]>(`http://localhost:8080/api/classroom/${classId}/students`, {
+        const res = await axios.get<Student[]>(`http://localhost:8080/api/classroom/${classroomId}/students`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -48,7 +50,7 @@ const AttendanceComponent = ({ classId }: { classId: string }) => {
 
     const fetchAttendance = async () => {
       try {
-        const res = await axios.get<AttendanceCell[]>(`http://localhost:8080/api/attendance/${classId}/students`, {
+        const res = await axios.get<AttendanceCell[]>(`http://localhost:8080/api/attendance/${classroomId}/students`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -60,11 +62,11 @@ const AttendanceComponent = ({ classId }: { classId: string }) => {
       }
     };
 
-    if (classId) {
+    if (classroomId) {
       fetchStudents();
       fetchAttendance();
     }
-  }, [classId]);
+  }, [classroomId]);
 
   const addClassSession = () => {
     const latestDate = sessionDates.length > 0
@@ -79,7 +81,7 @@ const AttendanceComponent = ({ classId }: { classId: string }) => {
 
   const deleteSessionDate = async (dateToDelete: string) => {
     try {
-      await axios.delete(`http://localhost:8080/api/attendance/${classId}/date/${dateToDelete}`, {
+      await axios.delete(`http://localhost:8080/api/attendance/${classroomId}/date/${dateToDelete}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSessionDates((prev) => prev.filter((s) => s.date !== dateToDelete));
@@ -103,7 +105,7 @@ const AttendanceComponent = ({ classId }: { classId: string }) => {
         });
         existing.status = newStatus;
       } else {
-        const res = await axios.post(`http://localhost:8080/api/attendance/${classId}/mark`, payload, {
+        const res = await axios.post(`http://localhost:8080/api/attendance/${classroomId}/mark`, payload, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -122,8 +124,28 @@ const AttendanceComponent = ({ classId }: { classId: string }) => {
     return record?.status || null;
   };
 
-  const handleExport = () => {
-    window.open(`http://localhost:8080/api/attendance/${classId}/export`, "_blank");
+  const handleExport = async () => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/attendance/${classroomId}/export`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: "blob",
+      });
+  
+      // Type assertion to fix the TypeScript error
+      const blob = new Blob([response.data as BlobPart], { type: response.headers['content-type'] });
+  
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `attendance_${classroomId}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error("Failed to export attendance", err);
+    }
   };
 
   return (
@@ -157,6 +179,7 @@ const AttendanceComponent = ({ classId }: { classId: string }) => {
               <tr>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                
                 {sessionDates.map((session, idx) => (
                   <th key={session.date} className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">
                     <div className="flex items-center justify-center gap-1">
@@ -196,57 +219,81 @@ const AttendanceComponent = ({ classId }: { classId: string }) => {
                       </button>
                     </div>
                   </th>
+                  
                 ))}
+                <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">
+  Total Present
+</th>
+
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {students.map((student) => (
-                <tr key={student.studentId} className="hover:bg-gray-100 transition">
-                  <td className="px-4 py-2 text-sm text-gray-600">{student.studentId}</td>
-                  <td className="px-4 py-2 font-medium">
-                    {student.firstname} {student.lastname} <span className="text-sm text-gray-500">({student.username})</span>
-                  </td>
-                  {sessionDates.map((session) => {
-                    const date = session.date;
-                    const status = getStatus(student.studentId, date);
-                    const isEditing = editingCell?.studentId === student.studentId && editingCell?.date === date;
-                    return (
-                      <td key={date} className="px-4 py-2 text-center">
-                        {isEditing ? (
-                          <div className="inline-flex gap-2">
-                            <button
-                              onClick={() => toggleAttendance(student.studentId, date, "PRESENT")}
-                              className="p-1 text-green-600 hover:bg-green-100 rounded"
-                            >
-                              <CheckCircle size={20} />
-                            </button>
-                            <button
-                              onClick={() => toggleAttendance(student.studentId, date, "ABSENT")}
-                              className="p-1 text-red-600 hover:bg-red-100 rounded"
-                            >
-                              <XCircle size={20} />
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setEditingCell({ studentId: student.studentId, date })}
-                            className="text-gray-500 hover:text-black"
-                          >
-                            {status === "PRESENT" ? (
-                              <CheckCircle className="text-green-600" size={20} />
-                            ) : status === "ABSENT" ? (
-                              <XCircle className="text-red-600" size={20} />
-                            ) : (
-                              <ChevronDown size={18} />
-                            )}
-                          </button>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
+  {students.map((student) => {
+    const presentCount = attendance.filter(
+      (a) => a.studentId === student.studentId && a.status === "PRESENT"
+    ).length;
+
+    return (
+      <tr key={student.studentId} className="hover:bg-gray-100 transition">
+        <td className="px-4 py-2 text-sm text-gray-600">{student.studentId}</td>
+        <td className="px-4 py-2 font-medium">
+          {student.firstname} {student.lastname}{" "}
+          <span className="text-sm text-gray-500">({student.username})</span>
+        </td>
+        {sessionDates.map((session) => {
+          const date = session.date;
+          const status = getStatus(student.studentId, date);
+          const isEditing =
+            editingCell?.studentId === student.studentId &&
+            editingCell?.date === date;
+          return (
+            <td key={date} className="px-4 py-2 text-center">
+              {isEditing ? (
+                <div className="inline-flex gap-2">
+                  <button
+                    onClick={() =>
+                      toggleAttendance(student.studentId, date, "PRESENT")
+                    }
+                    className="p-1 text-green-600 hover:bg-green-100 rounded"
+                  >
+                    <CheckCircle size={20} />
+                  </button>
+                  <button
+                    onClick={() =>
+                      toggleAttendance(student.studentId, date, "ABSENT")
+                    }
+                    className="p-1 text-red-600 hover:bg-red-100 rounded"
+                  >
+                    <XCircle size={20} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() =>
+                    setEditingCell({ studentId: student.studentId, date })
+                  }
+                  className="text-gray-500 hover:text-black"
+                >
+                  {status === "PRESENT" ? (
+                    <CheckCircle className="text-green-600" size={20} />
+                  ) : status === "ABSENT" ? (
+                    <XCircle className="text-red-600" size={20} />
+                  ) : (
+                    <ChevronDown size={18} />
+                  )}
+                </button>
+              )}
+            </td>
+          );
+        })}
+        <td className="px-4 py-2 text-center font-semibold text-blue-600">
+          {presentCount}
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
+
           </table>
         </div>
       )}

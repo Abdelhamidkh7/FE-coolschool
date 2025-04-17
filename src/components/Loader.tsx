@@ -1,14 +1,25 @@
-export const Loader = ({ size = "medium" }: { size?: "small" | "medium" | "large" }) => {
-    const sizes = {
-      small: "w-4 h-4 border-2",
-      medium: "w-6 h-6 border-4",
-      large: "w-8 h-8 border-4",
-    };
-  
-    return (
-      <div
-        className={`${sizes[size]} border-gray-300 border-t-blue-600 rounded-full animate-spin`}
-      />
-    );
-  };
-  
+import React from "react";
+
+interface LoaderProps {
+  size?: number;     
+  color?: string;   
+}
+
+export const Loader: React.FC<LoaderProps> = ({
+  size = 40,
+  color = "#0065ea",
+}) => {
+  const border = Math.max(2, Math.floor(size * 0.1));
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        border: `${border}px solid #e5e7eb`,
+        borderTop: `${border}px solid ${color}`,
+        borderRadius: "50%",
+        animation: "spin 1s linear infinite",
+      }}
+    />
+  );
+};

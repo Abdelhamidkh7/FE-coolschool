@@ -27,7 +27,21 @@ export const signupUser = async (username: string, email: string, password: stri
 
   return response.json();
 };
+const token = localStorage.getItem("token");
+export const logoutUser = async () => {
+  const response = await fetch(`${API_BASE_URL}/logout`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+    credentials: "include", 
+  });
 
-export const logoutUser = () => {
+  if (!response.ok) {
+    throw new Error("Logout failed. Please try again.");
+  }
+
   localStorage.removeItem("token");
 };
+
