@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getStudents } from "../api/ClassroomApi"; // Ensure this function is implemented in ClassroomApi.ts
+import { getStudents } from "../api/ClassroomApi"; 
 
 interface StudentListProps {
   classId: string;

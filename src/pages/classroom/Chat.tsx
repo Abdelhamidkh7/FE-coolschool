@@ -3,8 +3,8 @@ import { Client } from "@stomp/stompjs";
 import moment from "moment";
 import { getChatHistory } from "../../api/ChatApi";
 import { useParams } from "react-router-dom";
-
-
+import { AnimatePresence, motion } from "framer-motion";
+import { X } from "lucide-react";
 
 interface ChatMessage {
   id: number;
@@ -12,7 +12,7 @@ interface ChatMessage {
   senderName: string;
   content: string;
   timestamp: string; //  "2025-03-27 13:35"
-  image?: string;    // base64 or URL though not yet implemented
+  image?: string; 
 }
 
 const Chat = () => {
@@ -20,9 +20,9 @@ const Chat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState<string>("");
   const [user, setUser] = useState<{ id: number; name: string } | null>(null);
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [stompClient, setStompClient] = useState<Client | null>(null);
   const [connected, setConnected] = useState(false);
-
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -30,7 +30,6 @@ const Chat = () => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const getDayLabel = (ts: string) => {
-
     const msgMoment = moment(ts, "YYYY-MM-DD HH:mm");
     const today = moment().startOf("day");
     const msgDay = msgMoment.clone().startOf("day");
@@ -61,7 +60,7 @@ const Chat = () => {
     }
   }, []);
 
-  //  Fetching chat history 
+  //  Fetching chat history
   useEffect(() => {
     if (!classroomId) return;
     const fetchHistory = async () => {
@@ -120,11 +119,11 @@ const Chat = () => {
   //auto scroll
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
- 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = event.target.files;
     if (!fileList || fileList.length === 0) {
@@ -146,7 +145,7 @@ const Chat = () => {
 
   //  Send message via WebSocket
   const handleSendMessage = async () => {
-    if (!message.trim() && !filePreview) return; 
+    if (!message.trim() && !filePreview) return;
     if (!user || !stompClient) return;
 
     // Build the chat message
@@ -154,7 +153,7 @@ const Chat = () => {
       senderId: user.id,
       senderName: user.name,
       content: message,
-      timestamp: moment().format("YYYY-MM-DD HH:mm"), 
+      timestamp: moment().format("YYYY-MM-DD HH:mm"),
       classroomId: classroomId,
       image: filePreview || undefined,
     };
@@ -220,30 +219,30 @@ const Chat = () => {
 
           {/* Message Bubble */}
           <div
-  className="relative p-3 max-w-[75%] break-words shadow-sm rounded-lg"
-  
-  style={{
-    backgroundColor: isMine ? "#0065ea" : "#ffffff",
-    color:           isMine ? "#ffffff" : "#002d55",
-    border:          isMine ? "none" : "none",
-    borderRadius:    isMine ? "0.5rem 0.5rem 0 0.5rem" : "0.5rem 0.5rem 0.5rem 0",
-  }}
->
-
-          
+            className="relative p-3 max-w-[75%] break-words shadow-sm rounded-lg"
+            style={{
+              backgroundColor: isMine ? "#0065ea" : "#ffffff",
+              color: isMine ? "#ffffff" : "#002d55",
+              border: isMine ? "none" : "none",
+              borderRadius: isMine
+                ? "0.5rem 0.5rem 0 0.5rem"
+                : "0.5rem 0.5rem 0.5rem 0",
+            }}
+          >
             {/* If text exists, show it */}
             {msg.content && <div>{msg.content}</div>}
 
             {/* If there's an image, show it */}
             {msg.image && (
-              <img
-                src={msg.image}
-                alt="attachment"
-                className="mt-2 rounded cursor-pointer"
-                style={{ maxWidth: "200px" }}
-                onClick={() => window.open(msg.image, "_blank")}
-              />
-            )}
+  <img
+    src={msg.image}
+    alt="attachment"
+    className="mt-2 rounded cursor-pointer"
+    style={{ maxWidth: "200px" }}
+    onClick={() => msg.image && setExpandedImage(msg.image)}
+  />
+)}
+
           </div>
 
           {/* Timestamp below the bubble */}
@@ -262,119 +261,79 @@ const Chat = () => {
   };
 
   return (
-    <div className="flex flex-col h-full" style={{ backgroundColor: "#f3f4f6" }}>
-      {/* Header */}
-      <header
-        className="flex-none px-6 py-4 flex items-center justify-between shadow-md"
-        style={{
-          backgroundColor: "#ffffff",
-          borderBottom: "2px solid #e5e7eb",
-        }}
-      >
-        <h1
-          className="text-2xl font-bold tracking-wide"
-          style={{ color: "#002d55" }}
-        >
-          Classroom Chat
-        </h1>
-        <span
-          className={`text-sm font-semibold flex items-center ${
-            connected ? "text-green-600" : "text-red-600"
-          }`}
-        >
-          {connected ? "🟢 Online" : "🔴 Offline"}
-        </span>
+    <div className="flex flex-col h-full bg-gray-100">
+      <header className="flex-none px-6 py-4 flex items-center justify-between bg-white border-b-2 border-gray-200 shadow-md">
+        <h1 className="text-2xl font-bold text-blue-900">Classroom Chat</h1>
+        <span className={`text-sm font-semibold ${connected ? "text-green-600" : "text-red-600"}`}>{connected ? "🟢 Online" : "🔴 Offline"}</span>
       </header>
-  
-      {/* Scrollable Messages */}
-      <main
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-6 py-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-300"
-      >
+      <main ref={chatContainerRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-300">
         {messages.length === 0 ? (
-          <div className="text-gray-500 text-center mt-12 italic">
-            No messages yet. Start the conversation!
-          </div>
-        ) : (
-          renderMessages()
-        )}
+          <div className="text-gray-500 italic text-center mt-12">No messages yet. Start the conversation!</div>
+        ) : renderMessages()}
       </main>
-  
-      {/* Footer + Input */}
-      <footer
-        className="flex-none px-6 py-4 bg-white shadow-inner flex items-center gap-3"
-        style={{ borderTop: "2px solid #e5e7eb" }}
-      >
-        {/* Input */}
+      <footer className="flex-none px-6 py-4 bg-white border-t-2 border-gray-200 shadow-inner flex items-center gap-3">
         <input
           type="text"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type your message…"
-          className="flex-grow px-4 py-2 border-2 rounded-full focus:outline-none focus:ring-2"
-          style={{ borderColor: "#002d55", color: "#000" }}
+          className="flex-grow px-4 py-2 border-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400"
           disabled={!user}
         />
-  
-        {/* Attach */}
-        <label
-          className="flex items-center justify-center w-10 h-10 rounded-full hover:opacity-90 transition"
-          style={{ backgroundColor: "#df8300" }}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828M8 7h.01"
-            />
+        <label className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-600 hover:opacity-90 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828M8 7h.01" />
           </svg>
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFileChange}
-          />
+          <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
         </label>
-  
-        {/* Preview */}
         {filePreview && (
-          <img
-            src={filePreview}
-            alt="preview"
-            className="h-10 w-10 object-cover rounded-lg border-2"
-            style={{ borderColor: "#0065ea" }}
-          />
+          <img src={filePreview} alt="preview" className="h-10 w-10 object-cover rounded-lg border-2 border-blue-500" />
         )}
-  
-        {/* Send */}
         <button
           onClick={handleSendMessage}
           className="px-5 py-2 rounded-full text-white font-medium shadow-md hover:shadow-lg transition-colors disabled:opacity-50"
-          style={{
-            backgroundColor: "#0065ea",
-            border: "2px solid #002d55",
-          }}
+          style={{ backgroundColor: "#0065ea", border: "2px solid #002d55" }}
           disabled={!user}
-        >
-          Send
-        </button>
+        >Send</button>
+
+      <AnimatePresence>
+        {expandedImage && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div
+              className="relative"
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            >
+              <button
+                aria-label="Close preview"
+                onClick={() => setExpandedImage(null)}
+                className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-md hover:bg-gray-200 transition"
+              >
+                <X className="w-6 h-6 text-gray-800" />
+              </button>
+              <motion.img
+                layoutId={expandedImage}
+                src={expandedImage}
+                alt="Expanded preview"
+                className="max-w-[90vw] max-h-[90vh] rounded-lg shadow-lg"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       </footer>
     </div>
   );
-  
-  
-  
-  
-  
-  
 };
 
 export default Chat;

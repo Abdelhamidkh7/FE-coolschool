@@ -19,6 +19,8 @@ import AttendanceTab from "./pages/classroom/AttendanceTab";
 import SubmissionGradePage from "./pages/classroom/SubmissionGradePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
+import AnalyticsPage from "./pages/classroom/AnalyticsPage";
+import { ClassInfoPage } from "./pages/classroom/ClassInfoPage";
 
 const App = () => {
   return (
@@ -33,12 +35,15 @@ const App = () => {
             <Route path="/classes" element={<ClassesPage />} />
             <Route path="/quizzes" element={<MyQuizzesPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            
 
             {/* //Classroom layout and nested tabs */}
             <Route path="/classroom/:classroomId" element={<ClassroomPage />}>
               <Route index element={<Navigate to="chat" replace />} />
               <Route path="chat" element={<ChatTab />} />
               <Route path="assignments" element={<AssignmentsTab />} />
+              <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="info" element={<ClassInfoPage />} />
               <Route
                 path="/classroom/:classroomId/assignments/:quizId"
                 element={<AssignmentQuizPage />}

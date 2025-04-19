@@ -1,6 +1,5 @@
-// components/SuccessOverlay.tsx
 import Lottie from "lottie-react";
-import successAnimation from "../assets/animations/success.json"; // Make sure this file exists
+import successAnimation from "../assets/animations/success.json"; 
 
 const SuccessOverlay = () => {
   return (

@@ -4,7 +4,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-// Types
+
 interface QuizDetail { quizType: string; }
 interface Answer {
   id: number;
@@ -18,6 +18,7 @@ interface Answer {
 interface SubmissionDetail {
   id: number;
   studentId: number;
+  score: number;             // overall score for assignments
   feedback: string;
   answers: Answer[];
   submissionDate: string;
@@ -25,7 +26,11 @@ interface SubmissionDetail {
 }
 
 const SubmissionGradePage: React.FC = () => {
-  const { classroomId, quizId, submissionId } = useParams<{ classroomId: string; quizId: string; submissionId: string }>();
+  const { classroomId, quizId, submissionId } = useParams<{
+    classroomId: string;
+    quizId: string;
+    submissionId: string;
+  }>();
   const navigate = useNavigate();
 
   // State
@@ -43,32 +48,35 @@ const SubmissionGradePage: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        // Fetch quiz type
+        
         const { data: quiz } = await axios.get<QuizDetail>(
           `http://localhost:8080/api/quiz/${quizId}`,
           { headers }
         );
         setQuizType(quiz.quizType);
 
+       
+        const { data } = await axios.get<SubmissionDetail>(
+          `http://localhost:8080/api/quiz/${quizId}/submission/${submissionId}`,
+          { headers }
+        );
+        setSubmission(data);
+        setFeedback(data.feedback);
+
         if (quiz.quizType === 'ASSIGNMENT') {
-          // Download assignment PDF
+          // Download file
           const { data: blob } = await axios.get<Blob>(
             `http://localhost:8080/api/quiz/${quizId}/submission/${submissionId}/file`,
             { headers, responseType: 'blob' }
           );
           setFileUrl(URL.createObjectURL(blob));
+          setAssignmentScore(data.score || 0);
         } else {
-          // Load quiz submission data
-          const { data } = await axios.get<SubmissionDetail>(
-            `http://localhost:8080/api/quiz/${quizId}/submission/${submissionId}`,
-            { headers }
-          );
-          setSubmission(data);
-          setFeedback(data.feedback);
+         
           setAnswers(
             data.answers.map(a => ({
               ...a,
-              assignedScore: a.questionType === 'MCQ' ? a.score : 0,
+              assignedScore: a.score,    
             }))
           );
         }
@@ -91,17 +99,26 @@ const SubmissionGradePage: React.FC = () => {
 
   const saveGrade = async () => {
     try {
-      const payload = quizType === 'ASSIGNMENT'
-        ? { score: assignmentScore, feedback, answers: [] }
-        : { score: answers.reduce((sum, a) => sum + a.assignedScore, 0), feedback, answers: answers.map(a => ({ submissionAnswerId: a.id, score: a.assignedScore })) };
-      const id = quizType === 'ASSIGNMENT' ? submissionId : submission?.id;
+      const payload =
+        quizType === 'ASSIGNMENT'
+          ? { score: assignmentScore, feedback, answers: [] }
+          : {
+              score: answers.reduce((sum, a) => sum + a.assignedScore, 0),
+              feedback,
+              answers: answers.map(a => ({
+                submissionAnswerId: a.id,
+                score: a.assignedScore,
+              })),
+            };
+      const id = quizType === 'ASSIGNMENT' ? submissionId! : submission!.id;
       await axios.put(
         `http://localhost:8080/api/quiz/${quizId}/grade/${id}`,
         payload,
         { headers }
       );
       toast.success('Grade saved successfully!');
-      setTimeout(() => navigate(-1), 600);
+      // ← go back to the quiz‑grades list
+      navigate(`/classroom/${classroomId}/grades`,{ state: { selectedQuizId: Number(quizId), viewAll: false } });
     } catch (err) {
       console.error('Save error:', err);
       toast.error('Could not save grade');
@@ -116,17 +133,22 @@ const SubmissionGradePage: React.FC = () => {
     <div className="p-8 max-w-3xl mx-auto space-y-6">
       <Toaster position="top-right" />
       <motion.button
-        onClick={() => navigate(-1)}
+        onClick={() =>  navigate(
+              `/classroom/${classroomId}/grades`,
+              { state: { selectedQuizId: Number(quizId), viewAll: false } }
+            )}
         whileHover={{ scale: 1.05 }}
         className="flex items-center text-indigo-600 hover:underline"
       >
-        ← Back to Grades
+        ← Back to Quiz Grades
       </motion.button>
 
       {quizType === 'ASSIGNMENT' ? (
         <div className="space-y-6">
           <div className="text-center py-8">
-            <h3 className="text-xl font-semibold mb-4">Download Assignment Submission</h3>
+            <h3 className="text-xl font-semibold mb-4">
+              Download Assignment Submission
+            </h3>
             <a
               href={fileUrl}
               download={`submission_${submissionId}.pdf`}
@@ -135,6 +157,7 @@ const SubmissionGradePage: React.FC = () => {
               Download PDF
             </a>
           </div>
+
           <div className="bg-white rounded-lg shadow p-6">
             <h4 className="text-lg font-medium mb-2">Grade Assignment</h4>
             <div className="mb-4">
@@ -152,9 +175,9 @@ const SubmissionGradePage: React.FC = () => {
               <textarea
                 rows={4}
                 value={feedback}
-                onChange={e => setFeedback(e.target.value)}
+                onChange={e => setFeedback(e.target.value || '')}
                 className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                placeholder="Enter feedback for the assignment"
+                placeholder="Enter feedback"
               />
             </div>
             <div className="flex justify-end">
@@ -179,7 +202,8 @@ const SubmissionGradePage: React.FC = () => {
               Student: {submission.user?.firstname} {submission.user?.lastname}
             </h2>
             <p className="text-gray-500">
-              Submitted on {new Date(submission.submissionDate).toLocaleString()}
+              Submitted on{' '}
+              {new Date(submission.submissionDate).toLocaleString()}
             </p>
           </header>
 
@@ -217,15 +241,18 @@ const SubmissionGradePage: React.FC = () => {
             <textarea
               rows={4}
               value={feedback}
-              onChange={e => setFeedback(e.target.value)}
+              onChange={e => setFeedback(e.target.value || '')}
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-200"
-              placeholder="Enter overall feedback"
+              placeholder="Enter feedback"
             />
           </div>
 
           <div className="flex justify-end gap-4">
             <button
-              onClick={() => navigate(-1)}
+                onClick={() =>  navigate(
+                  `/classroom/${classroomId}/grades`,
+                  { state: { selectedQuizId: Number(quizId), viewAll: false } }
+                )}
               className="px-4 py-2 border rounded-lg hover:bg-gray-100 transition"
             >
               Cancel
