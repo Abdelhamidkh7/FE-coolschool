@@ -142,7 +142,8 @@ export default function CalendarPage() {
       <header className="flex items-center justify-between px-6 py-4 bg-white shadow">
         <h1 className="text-2xl font-semibold text-gray-800">Calendar</h1>
         <motion.button
-          onClick={connected ? onDisconnect : () => window.location.href = `${API.replace('/api/calendar','')}/oauth2/authorization/google`}
+          onClick={connected ? onDisconnect : () => window.location.href = 
+            `${API.replace('/api/calendar','')}/oauth2/authorization/google`}
           whileHover={{ scale: 1.05 }}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white
             ${connected ? 'bg-red-600' : 'bg-blue-600'}`}

@@ -31,7 +31,7 @@ export default function InnerSidebar({ classId }: InnerSidebarProps) {
     getClassroom(classId)
       .then(data => setClassroom(data))
       .catch(console.error);
-  }, [classId]);
+  }, [classId,location.pathname]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -101,19 +101,17 @@ export default function InnerSidebar({ classId }: InnerSidebarProps) {
 
   return (
     <>
-      {/* Mobile Top Bar: only show menu button, omit title */}
+    
       <header className="md:hidden flex items-center justify-between bg-gray-900 text-white p-3 shadow">
         <button onClick={() => setMobileOpen(o => !o)} aria-label="Toggle menu">
           {mobileOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </header>
 
-      {/* Desktop Sidebar */}
       <div className="hidden md:flex flex-shrink-0 w-64 h-screen">
         {SidebarContent}
       </div>
 
-      {/* Mobile Drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-30 flex">
           <div

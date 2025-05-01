@@ -117,7 +117,6 @@ const SubmissionGradePage: React.FC = () => {
         { headers }
       );
       toast.success('Grade saved successfully!');
-      // ← go back to the quiz‑grades list
       navigate(`/classroom/${classroomId}/grades`,{ state: { selectedQuizId: Number(quizId), viewAll: false } });
     } catch (err) {
       console.error('Save error:', err);

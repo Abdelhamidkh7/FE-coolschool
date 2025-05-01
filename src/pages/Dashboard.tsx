@@ -1,21 +1,60 @@
+// src/pages/Dashboard.tsx
+import React from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
-import { Card } from "../components/Card";
 
-const Dashboard = () => {
+const PRIMARY = "#0065ea";
+const DARK = "#002d55";
+
+const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
+
+  const cards = [
+    {
+      title: "Classrooms",
+      desc: "Manage and view your classes.",
+      to: "/classes",
+    },
+    {
+      title: "Calendar",
+      desc: "View upcoming events and deadlines.",
+      to: "/calendar",
+    },
+    {
+      title: "Quizzes",
+      desc: "Start or review your quizzes.",
+      to: "/quizzes",
+    },
+  ];
+
   return (
-    // <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100">
+ 
 
+      <main className="flex-1 p-8 overflow-auto">
+        <h1 className="text-3xl font-bold mb-8" style={{ color: DARK }}>
+          Dashboard
+        </h1>
 
-      <div className="flex-1 p-6">
-        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card title="Classrooms" description="Manage and view your classes." />
-          <Card title="Calendar" description="View upcoming events and deadlines." />
-          <Card title="Recent Activity" description="See what's new in your courses." />
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {cards.map(({ title, desc, to }) => (
+            <div
+              key={title}
+              onClick={() => navigate(to)}
+              className="bg-white rounded-2xl shadow p-6 hover:shadow-xl transition cursor-pointer"
+            >
+              <h2
+                className="text-xl font-semibold mb-2"
+                style={{ color: PRIMARY }}
+              >
+                {title}
+              </h2>
+              <p className="text-gray-700">{desc}</p>
+            </div>
+          ))}
         </div>
-      </div>
-    // </div>
+      </main>
+     </div>
   );
 };
 

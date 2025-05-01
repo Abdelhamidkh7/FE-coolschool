@@ -43,7 +43,7 @@ const AssignmentsTab: React.FC = () => {
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
-  // Fetch classroom to detect owner
+
   useEffect(() => {
     if (!classroomId) return;
     axios
@@ -55,7 +55,7 @@ const AssignmentsTab: React.FC = () => {
       .catch(console.error);
   }, [classroomId]);
 
-  // Fetch quizzes once
+
   useEffect(() => {
     if (!classroomId) return;
     axios
@@ -71,7 +71,7 @@ const AssignmentsTab: React.FC = () => {
       .catch(console.error);
   }, [classroomId]);
 
-  // Success overlay timer
+
   useEffect(() => {
     if (!showSuccess) return;
     const t = setTimeout(() => setShowSuccess(false), 2000);
@@ -91,7 +91,7 @@ const AssignmentsTab: React.FC = () => {
       navigate(`/classroom/${classroomId}/assignments/${quiz.id}`);
       return;
     }
-    // students: original logic
+
     if (quiz.quizType === "QUIZ" && quiz.submitted) return;
     if (!isAvailable(quiz)) return;
     if (quiz.quizType === "QUIZ" && quiz.opened && !quiz.submitted) return;
@@ -103,7 +103,7 @@ const AssignmentsTab: React.FC = () => {
     setNotice({ quiz, message });
   };
 
-  // Confirm notice
+ 
   const handleNoticeConfirm = () => {
     if (!notice) return;
     const { quiz } = notice;
@@ -133,7 +133,7 @@ const AssignmentsTab: React.FC = () => {
 
   return (
     <div className="w-full h-full p-4 overflow-y-auto relative">
-      {/* Top bar */}
+     
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Quizzes / Assignments</h2>
         {isOwner && (
@@ -147,7 +147,7 @@ const AssignmentsTab: React.FC = () => {
         )}
       </div>
 
-      {/* Create form overlay */}
+      
       {showForm && classroomId && (
         <div className="fixed inset-0 bg-white z-40 p-6 overflow-auto shadow-lg">
           <button
@@ -197,8 +197,12 @@ const AssignmentsTab: React.FC = () => {
               {/* owner delete */}
               {isOwner && (
                 <button
-                  onClick={() => deleteQuiz(q.id)}
-                  className="absolute top-2 right-2 text-red-600 hover:text-red-800"
+                
+                   onClick={(e) => {
+                      e.stopPropagation();    
+                      deleteQuiz(q.id);
+                    }}
+                  className="absolute top-2 right-2 z-10 text-red-600 hover:text-red-800"
                   title="Delete quiz"
                 >
                   <Trash2 size={16} />
@@ -216,7 +220,7 @@ const AssignmentsTab: React.FC = () => {
                 <p className="mt-2 text-sm font-semibold text-red-500">Not Available</p>
               )}
 
-              {/* overlay click handler */}
+              
               <div
                 className="absolute inset-0"
                 onClick={() => onCardClick(q)}

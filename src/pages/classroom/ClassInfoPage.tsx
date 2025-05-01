@@ -97,7 +97,7 @@ export const ClassInfoPage: React.FC = () => {
   const handleDelete = async () => {
     if (!window.confirm("Delete this class forever?")) return;
     try {
-      await axios.post(`${API}/delete-class/${classId}`, {}, { headers });
+      await axios.delete(`${API}/delete-class/${classId}`, { headers });
       toast.success("Class deleted");
       navigate("/classes");
     } catch {
@@ -111,7 +111,7 @@ export const ClassInfoPage: React.FC = () => {
     try {
       await axios.post(`${API}/leave/${classId}`, {}, { headers });
       toast.success("You left the class");
-      navigate("/");
+      navigate("/classes");
     } catch {
       toast.error("Could not leave");
     }

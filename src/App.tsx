@@ -21,6 +21,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
 import AnalyticsPage from "./pages/classroom/AnalyticsPage";
 import { ClassInfoPage } from "./pages/classroom/ClassInfoPage";
+import ClassEditPage from "./pages/classroom/ClassEditPage";
 
 const App = () => {
   return (
@@ -48,6 +49,8 @@ const App = () => {
                 path="/classroom/:classroomId/assignments/:quizId"
                 element={<AssignmentQuizPage />}
               />
+              <Route path="/classroom/:classroomId/edit" element={<ClassEditPage/>} />
+
               <Route path="grades" element={<GradesTab />} />
               <Route
                 path="grades/:quizId/submission/:submissionId"

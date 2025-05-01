@@ -20,6 +20,7 @@ interface CreateQuizFormProps {
 }
 
 type FieldErrors = {
+  maxScore?: string;
   title?: string;
   description?: string;
   startDate?: string;
@@ -42,6 +43,7 @@ export default function CreateQuizForm({
   const [quizType, setQuizType] = useState<"QUIZ" | "ASSIGNMENT">("QUIZ");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [manualMax, setManualMax] =  useState<number>(0);
   const [questions, setQuestions] = useState<Question[]>([
     {
       question: "",
@@ -57,16 +59,16 @@ export default function CreateQuizForm({
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
-  // Prevent past dates:
+
   const minDateTime = new Date().toISOString().slice(0, 16);
 
-  // Compute max score
+
   const computedMaxScore = questions.reduce(
     (sum, q) => sum + (isNaN(q.points) ? 0 : q.points),
     0
   );
 
-  // Validation on submit
+
   const validate = (): FieldErrors => {
     const errs: FieldErrors = {};
 
@@ -80,7 +82,7 @@ export default function CreateQuizForm({
         errs.endDate = "End date must be after start date.";
       }
     } else {
-      // ASSIGNMENT: only endDate required
+    
       if (!endDate) errs.endDate = "End date is required.";
     }
 
@@ -126,7 +128,7 @@ export default function CreateQuizForm({
         quizType,
         startDate,
         endDate,
-        maxScore: computedMaxScore,
+        maxScore: quizType === "QUIZ" ? computedMaxScore : manualMax,
         questions: quizType === "QUIZ" ? questions : [],
       };
       await axios.post(`http://localhost:8080/api/quiz`, payload, { headers });
@@ -139,7 +141,7 @@ export default function CreateQuizForm({
     }
   };
 
-  // Question & choice helpers
+ 
   const addQuestion = () =>
     setQuestions((q) => [
       ...q,
@@ -199,7 +201,7 @@ export default function CreateQuizForm({
         Create {quizType === "QUIZ" ? "Quiz" : "Assignment"}
       </h2>
 
-      {/* Title */}
+
       <div className="mb-4">
         <label className="block text-sm font-medium">Title</label>
         <input
@@ -216,7 +218,7 @@ export default function CreateQuizForm({
         )}
       </div>
 
-      {/* Description */}
+ 
       <div className="mb-4">
         <label className="block text-sm font-medium">Description</label>
         <textarea
@@ -233,7 +235,7 @@ export default function CreateQuizForm({
         )}
       </div>
 
-      {/* Dates */}
+     
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div>
           <label className="block text-sm font-medium">Start Date</label>
@@ -271,7 +273,7 @@ export default function CreateQuizForm({
         </div>
       </div>
 
-      {/* Type & MaxScore */}
+  
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div>
           <label className="block text-sm font-medium">Type</label>
@@ -288,15 +290,30 @@ export default function CreateQuizForm({
         </div>
         <div>
           <label className="block text-sm font-medium">Max Score</label>
-          <input
-            readOnly
-            value={computedMaxScore}
-            className="mt-1 w-full bg-gray-100 border p-2 rounded"
-          />
+          {quizType === "QUIZ" ? (
+            <input
+              readOnly
+              value={computedMaxScore}
+              className="mt-1 w-full bg-gray-100 border p-2 rounded"
+            />
+          ) : (
+            <input
+              type="number"
+              min={1}
+              value={manualMax}
+              onChange={e => setManualMax(Number(e.target.value))}
+              className={`mt-1 w-full border p-2 rounded focus:ring-2 ${
+                triedSubmit && errors.maxScore ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-[#0065ea]"
+              }`}
+            />
+          )}
+          {triedSubmit && errors.maxScore && (
+            <p className="text-red-500 text-sm mt-1">{errors.maxScore}</p>
+          )}
         </div>
       </div>
 
-      {/* Questions */}
+      
       {quizType === "QUIZ" && (
         <>
           <h3 className="text-lg font-semibold mb-2 text-[#002d55]">
@@ -319,7 +336,7 @@ export default function CreateQuizForm({
                   <Trash2 size={16} />
                 </button>
 
-                {/* Question Text */}
+               
                 <div className="mb-3">
                   <input
                     placeholder="Question text"
@@ -340,7 +357,7 @@ export default function CreateQuizForm({
                   )}
                 </div>
 
-                {/* Type & Points */}
+               
                 <div className="grid grid-cols-2 gap-4 mb-3">
                   <select
                     value={q.questionType}
@@ -353,7 +370,7 @@ export default function CreateQuizForm({
                     }
                     className="border p-2 rounded focus:ring-2 focus:ring-[#0065ea]"
                   >
-                    <option value="MCQ">Multiple Choice</option>
+                    <option value="MCQ">Multiple Choice With Multiple Answers</option>
                     <option value="ESSAY">Essay</option>
                   </select>
                   <input
