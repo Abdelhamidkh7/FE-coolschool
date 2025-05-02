@@ -96,16 +96,16 @@ const Chat = () => {
         setConnected(true);
 
         // Subscribe to the chat topic
-        client.subscribe("/topic/classroom", (message) => {
+        client.subscribe(`/topic/classroom/${classroomId}`, (message) => {
           const receivedMessage: ChatMessage = JSON.parse(message.body);
           setMessages((prevMessages) => [...prevMessages, receivedMessage]);
         });
       },
       onStompError: (frame) => {
-        console.error("[Chat] ❌ STOMP error:", frame);
+        console.error("[Chat]  STOMP error:", frame);
       },
       onWebSocketClose: () => {
-        console.log("[Chat] 🔌 WebSocket Disconnected");
+        console.log("[Chat]  WebSocket Disconnected");
         setConnected(false);
       },
     });
